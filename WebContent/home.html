@@ -18,6 +18,14 @@
   <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js" type="text/javascript"></script>
   <script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/0.9.2/backbone-min.js"></script>
 
+  <script type="text/template" id="user-home-template">
+    <hr />
+    
+    <h1> Home Page </h1>
+
+    <hr/>
+  </script>
+
   <script type="text/template" id="user-login-template">
     <hr />
     <form class="login-user-form">
@@ -123,6 +131,18 @@
       urlRoot: '/rest/v1/vendor/verify'
     });
 
+
+    var UserHomeView = Backbone.View.extend({
+      el: '.page',
+      render: function () {
+        var template = _.template($('#user-home-template').html(), {});
+        this.$el.html(template);
+        $('.error').hide();
+      }
+    });
+
+    var userHomeView = new UserHomeView();
+
     var UserVerifyView = Backbone.View.extend({
       el: '.page',
       events: {
@@ -172,7 +192,7 @@
             console.log("Login successsssss");
             $('.success').show();
             $('.error').hide();
-            //router.navigate('verify?email=email&phno=phno', {trigger:true});
+            router.navigate('homepage', {trigger:true});
             //var template = _.template($('#verify-user-template').html(), {user: user});
             //that.$el.html(template);
           },
@@ -259,6 +279,7 @@
           "": "home", 
           "edit/:id": "edit",
           "new": "edit",
+          "homepage": "homepage"
         }
     });
     var router = new Router;
@@ -268,6 +289,9 @@
     })
     router.on('route:edit', function(id) {
       userEditView.render({id: id});
+    })
+    router.on('route:homepage', function(id) {
+      userHomeView.render({id: id});
     })
     Backbone.history.start();
   </script>
