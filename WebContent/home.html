@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>CBS</title>
+  <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.1.1/css/bootstrap.min.css">
+</head>
+<body>
+
+
+  <div class="container">
+    <h1>CBS Manager</h1>
+    <div class="page"></div>
+  </div>
+
+
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.8.2/jquery.min.js" type="text/javascript"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js" type="text/javascript"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/0.9.2/backbone-min.js"></script>
+
+  <script type="text/template" id="user-login-template">
+    <hr />
+    <form class="login-user-form">
+      <legend>Login User</legend>
+
+        <div class="control-group success">
+          <label class="control-label" for="inputSuccess">Logged in successfully.</label>          
+        </div>
+
+        <div class="control-group error">
+          <label class="control-label" for="inputSuccess">Log in failed.</label>          
+        </div>
+
+        <label>Email/Phone No</label>
+        <input name="loginid" type="text" />
+        <label>Passwrd</label>
+        <input name="pwd" type="password" />
+        <hr />
+       <button type="submit" class="btn">Login</button>
+       <a href="#/new" class="btn btn-primary">Register</a>
+    </form>
+  </script>
+
+  <script type="text/template" id="edit-user-template">
+    <form class="edit-user-form">
+      <legend><%= user ? 'Edit' : 'New' %> User</legend>
+        <div class="control-group error">
+          <label class="control-label" for="inputSuccess">Either phone number or email is already registered with us.</label>          
+        </div>
+        <label>Name</label>
+        <input name="name" type="text" value="<%= user ? user.get('name') : '' %>">
+        <label>Email</label>
+        <input name="email" type="text" value="<%= user ? user.get('email') : '' %>">
+        <label>Phone No</label>
+        <input name="phno" type="text" value="<%= user ? user.get('phno') : '' %>">
+        <label>Password</label>
+        <input name="pwd" type="password" value="<%= user ? user.get('pwd') : '' %>">
+        <hr />
+       <button type="submit" class="btn"><%= user ? 'Update' : 'Create' %></button>
+       <% if(user) { %>
+        <input type="hidden" name="id" value="<%= user.id %>" />
+       /*<button data-user-id="<%= user.id %>" class="btn btn-danger delete">Delete</button>*/
+       <% }; %>
+    </form>
+  </script>
+
+  <script type="text/template" id="verify-user-template">
+    
+      
+    
+    <form class="verify-user-form">
+      <legend>Verify Vendor</legend>
+
+        <div class="control-group success">
+          <label class="control-label" for="inputSuccess">Vendor added. Please verify with OTP.</label>          
+        </div>
+        <div class="control-group error">
+          <label class="control-label" for="inputFailure">Invalid OTP. Please try again.</label>          
+        </div>
+        <label>Email</label>
+        <input name="email" type="text" value="<%= user ? user.get('email') : '' %>">
+        <label>Phone No</label>
+        <input name="phno" type="text" value="<%= user ? user.get('phno') : '' %>" />
+        <label>OTP</label>
+        <input name="otp" type="text" />
+        <hr />
+       <button type="submit" class="btn">Verify</button>
+    </form>
+  </script>
+
+  <script>
+    function htmlEncode(value){
+      return $('<div/>').text(value).html();
+    }
+    $.fn.serializeObject = function() {
+      var o = {};
+      var a = this.serializeArray();
+      $.each(a, function() {
+          if (o[this.name] !== undefined) {
+              if (!o[this.name].push) {
+                  o[this.name] = [o[this.name]];
+              }
+              o[this.name].push(this.value || '');
+          } else {
+              o[this.name] = this.value || '';
+          }
+      });
+      return o;
+    };
+    $.ajaxPrefilter( function( options, originalOptions, jqXHR ) {
+      options.url = 'http://localhost:8080/cbsweb' + options.url;
+    });
+    /*var Users = Backbone.Collection.extend({
+      url: '/users'
+    });*/
+    var User = Backbone.Model.extend({
+      urlRoot: '/rest/v1/vendor/new'
+    });
+    var Login = Backbone.Model.extend({
+      urlRoot: '/rest/v1/vendor/login'
+    });
+    var Verify = Backbone.Model.extend({
+      urlRoot: '/rest/v1/vendor/verify'
+    });
+
+    var UserVerifyView = Backbone.View.extend({
+      el: '.page',
+      events: {
+        'submit .verify-user-form': 'verifyUser',
+      },
+      render: function () {
+        var template = _.template($('#verify-user-template').html(), {user: null});
+        this.$el.html(template);
+        $('.error').hide();
+      },
+      verifyUser: function (ev) {
+        var that = this;
+        var userDetails = $(ev.currentTarget).serializeObject();
+        var verify = new Verify();
+        console.log("Verify started");
+        verify.save(userDetails, {
+          dataType: 'text',
+          success: function (user, response) {
+            console.log("Verify successsssss");            
+            router.navigate('', {trigger:true});
+          },
+          error: function (user, response) {
+            console.log("Verify failure");
+            $('.success').hide();
+            $('.error').show();
+          }
+        });
+        return false;
+      }
+    });
+
+    var userVerifyView = new UserVerifyView();
+    
+    var UserLoginView = Backbone.View.extend({
+      el: '.page',
+      events: {
+        'submit .login-user-form': 'loginUser',
+      },
+      loginUser: function (ev) {
+        var that = this;
+        var loginDetails = $(ev.currentTarget).serializeObject();
+        var login = new Login();
+        console.log("Login started");
+        login.save(loginDetails, {
+          dataType: 'text',
+          success: function (login, response) {
+            console.log("Login successsssss");
+            $('.success').show();
+            $('.error').hide();
+            //router.navigate('verify?email=email&phno=phno', {trigger:true});
+            //var template = _.template($('#verify-user-template').html(), {user: user});
+            //that.$el.html(template);
+          },
+          error: function (login, response) {
+            console.log("Login failure");
+            $('.success').hide();
+            $('.error').show();
+          }
+        });
+        return false;
+      },
+      render: function () {
+        var template = _.template($('#user-login-template').html(), {});
+        this.$el.html(template);   
+        $('.success').hide();
+        $('.error').hide();
+      }
+    });
+
+    var userLoginView = new UserLoginView();
+
+    var UserEditView = Backbone.View.extend({
+      el: '.page',
+      events: {
+        'submit .edit-user-form': 'saveUser',
+        'click .delete': 'deleteUser'
+      },
+      saveUser: function (ev) {
+        var that = this;
+        var userDetails = $(ev.currentTarget).serializeObject();
+        var user = new User();
+        console.log("Submit started");
+        user.save(userDetails, {
+          dataType: 'text',
+          success: function (user, response) {
+            console.log("Submit successsssss" + user.get('phno'));            
+            //router.navigate('verify?email=email&phno=phno', {trigger:true});
+            var template = _.template($('#verify-user-template').html(), {user: user});
+            that.$el.html(template);
+            $('.success').show();
+            $('.error').hide();
+          },
+          error: function (user, response) {
+            console.log("Submit failure");
+            $('.error').show();
+            //router.navigate('verify?email=email&phno=phno', {trigger:true});
+            /*var template = _.template($('#verify-user-template').html(), {user: user});
+            that.$el.html(template);*/
+          }
+        });
+        return false;
+      },
+      deleteUser: function (ev) {
+        this.user.destroy({
+          success: function () {
+            console.log('destroyed');
+            router.navigate('', {trigger:true});
+          }
+        });
+        return false;
+      },
+      render: function (options) {
+        var that = this;        
+        if(options.id) {
+          that.user = new User({id: options.id});
+          that.user.fetch({
+            success: function (user) {    
+              var template = _.template($('#edit-user-template').html(), {user: user});
+              that.$el.html(template);
+            }
+          })
+        } else {
+          var template = _.template($('#edit-user-template').html(), {user: null});
+          that.$el.html(template);
+        }
+        $('.error').hide();
+      }
+    });
+
+    var userEditView = new UserEditView();
+
+    var Router = Backbone.Router.extend({
+        routes: {
+          "": "home", 
+          "edit/:id": "edit",
+          "new": "edit",
+        }
+    });
+    var router = new Router;
+    router.on('route:home', function() {
+      // render login page
+      userLoginView.render();
+    })
+    router.on('route:edit', function(id) {
+      userEditView.render({id: id});
+    })
+    Backbone.history.start();
+  </script>
+
+
+</body>
+</html> 
